@@ -1,25 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rospy
-from targets_path_planning.msg import Path
-from path_planning.Point import Point, Vector2d
-from geometry_msgs.msg import Pose, Twist
-import gazebo_communicator.GazeboCommunicator as gc
-from gazebo_communicator.Robot import Robot
-from gazebo_communicator.Charger import Charger
-from gazebo_communicator.Worker import Worker
-import gazebo_communicator.BatteryTracker as bt
-import gazebo_communicator.GazeboConstants as gc_const
-import path_planning.PathPlanner as pp
-import path_planning.Constants as const
-from path_planning.MovementManager import MovementManager
-from path_planning.Heightmap import Heightmap
-import copy
-from math import sqrt, asin, fabs, pi
 from time import sleep
-from time import time
-import random
-from scipy.spatial.transform import Rotation
+import sys
+#import gazebo_communicator.GazeboCommunicator as gc
+import task_management.TerritoryCleaning as tc
 
 def get_min_dist(p, points):
 
@@ -76,87 +61,8 @@ def make_pose_msg(state, orient):
 
 rospy.init_node('ros_node')
 sleep(1)
-flag = True
-
-name1 = 'sim_p3at1'
-name2 = 'sim_p3at2'
-names = [name1, name2]
-flag = False
-if flag:
-	
-	p1 = Point(5, 0, 0)
-	g1 = Point(-5, 0, 0)
-	
-	p2 = Point(0, -0.5, 0)
-	g2 = Point(0, 0.5, 0)
-	
-	vect1 = p1.get_angle_between_points(g1)
-	rot1 = Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
-	quat1 = rot1.as_quat()
-
-	vect2 = p2.get_angle_between_points(g2)
-	rot2 = Rotation.from_euler('xyz', [0, 0, vect2], degrees=True)
-	quat2 = rot2.as_quat()
-
-	gc.spawn_worker(name1, p1, quat1)
-	gc.spawn_worker(name2, p2, quat2)
-	
-	w_paths = {}
-	w_points = {}
-	ch_points = {}
-	w_paths[name1] = [[p1, g1]]
-	w_paths[name2] = [[p2, g2]]
-	w_points[name1] = [g1]
-	w_points[name2] = [g2]
-	ch_points[name1] = []
-	ch_points[name2] = []
-	
-	mm = MovementManager(None, [name1, name2], [])
-	mm.prepare_robots(w_paths, w_points, ch_points, {}, {}, {})
-	mm.start()
-	
-else:
-
-	p1 = Point(5, 0, 0)
-	ch_p1 = Point(0, 0, 0)
-	g1 = Point(-5, 0, 0)
-	path1 = [p1, g1]
-	path1_1 = [g1, p1]
-	
-	p2 = Point(5, 5, 0)
-	pre_ch_p = Point(3, 2, 0)
-	pre_ch_p2 = (pre_ch_p, ch_p1, name1)
-	path2_ch = [p2, pre_ch_p]
-	path2_b = [ch_p1, p2]
-	
-	vect1 = p1.get_angle_between_points(g1)
-	rot1 = Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
-	quat1 = rot1.as_quat()
-
-	vect2 = p2.get_angle_between_points(pre_ch_p)
-	rot2 = Rotation.from_euler('xyz', [0, 0, vect2], degrees=True)
-	quat2 = rot2.as_quat()
-
-	gc.spawn_worker(name1, p1, quat1)
-	gc.spawn_charger(name2, p2, quat2)
-	
-	w_paths = {}
-	w_points = {}
-	ch_points = {}
-	w_paths[name1] = [path1, path1_1]
-	w_points[name1] = [g1]
-	ch_points[name1] = [ch_p1]
-	
-	pre_ch_points = {}
-	to_ch_paths = {}
-	to_base_paths = {}
-	pre_ch_points[name2] = [pre_ch_p2]
-	to_ch_paths[name2] = [path2_ch]
-	to_base_paths[name2] = [path2_b]
-	
-	mm = MovementManager(None, [name1], [name2])
-	mm.prepare_robots(w_paths, w_points, ch_points, pre_ch_points, to_ch_paths, to_base_paths)
-	mm.start()
+print(sys.version)
+tc.pso_test()
 
 
 print('Finish!')
