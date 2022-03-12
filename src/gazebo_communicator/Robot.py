@@ -1,13 +1,13 @@
 import cv2
 import rospy
-from targets_path_planning.msg import Path, WorkPath, Charge
+from tasks_distribution.msg import Path, WorkPath, Charge
 import path_planning.Point as PointGeom
-import GazeboConstants as const
-import GazeboCommunicator as gc
+import gazebo_communicator.GazeboConstants as const
+import gazebo_communicator.GazeboCommunicator as gc
 from math import fabs
 import threading as thr
 from geometry_msgs.msg import Point, Twist
-from targets_path_planning.msg import ArucoDist
+from tasks_distribution.msg import ArucoDist
 
 # The class of the control object of the ground target in the Gazebo simulation environment
 
@@ -47,20 +47,22 @@ class Robot(thr.Thread):
 		
 		self.vel_publisher = rospy.Publisher(self.topic_subname + '/cmd_vel', Twist, queue_size=10)
 		
-		self.paths_pub = rospy.Publisher(self.topic_subname + '/waypoints_array', WorkPath, queue_size=10)
-		self.paths_sub = rospy.Subscriber(self.topic_subname + '/waypoints_array', WorkPath, self.set_path)
+		#self.paths_pub = rospy.Publisher(self.topic_subname + '/waypoints_array', WorkPath, queue_size=10)
+		#self.paths_sub = rospy.Subscriber(self.topic_subname + '/waypoints_array', WorkPath, self.set_path)
 		
-		self.workpoints_pub = rospy.Publisher(self.topic_subname + '/workpoints_array', Path, queue_size=10)
-		self.workpoints_sub = rospy.Subscriber(self.topic_subname + '/workpoints_array', Path, self.set_work_points_path)
+		#self.workpoints_pub = rospy.Publisher(self.topic_subname + '/workpoints_array', Path, queue_size=10)
+		#self.workpoints_sub = rospy.Subscriber(self.topic_subname + '/workpoints_array', Path, self.set_work_points_path)
 
 
 	def unregister_subs(self):
 	
-		self.waypoint_sub.unregister()
-		self.waypoints_sub.unregister()
-		self.gps_listener.unregister()
-		self.def_prob_sub.unregister()
-		self.workpoints_sub.unregister()
+		pass
+		#self.waypoint_sub.unregister()
+		#self.waypoints_sub.unregister()
+		#self.gps_listener.unregister()
+		#self.def_prob_sub.unregister()
+		#self.workpoints_sub.unregister()
+		#self.vel_publisher.unregister()
 
 # Getting the position of the robot in 3D space in the Gazebo environment
 
@@ -152,6 +154,7 @@ class Robot(thr.Thread):
 # Stopping the robot
 	def stop(self):
 
+		self.change_mode("stop")
 		msg = Twist()
 		msg.linear.x = 0
 		msg.angular.z = 0

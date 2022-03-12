@@ -612,12 +612,7 @@ def difference_of_lists(m1, m2):
 
 		return []
 	
-def get_end_vect(path):
 
-	goal = path[len(path) - 1]
-	last_goal = path[len(path) - 2]
-	last_vect = last_goal.get_dir_vector_between_points(goal)
-	return last_vect
 	
 def prepare_hmap():
 

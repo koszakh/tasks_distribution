@@ -136,7 +136,7 @@
     <visual>
       <origin rpy="0 0 3.14" xyz="0 0.2 0.4"/>
       <geometry name="aaa">
-        <mesh filename="package://targets_path_planning/meshes/aruco_1.dae"/>
+        <mesh filename="package://tasks_distribution/meshes/aruco_1.dae"/>
       </geometry>
     </visual>
     <inertial>
@@ -154,7 +154,7 @@
     <visual>
       <origin rpy="0 0 3.14" xyz="0 -0.2 0.4"/>
       <geometry name="bbb">
-        <mesh filename="package://targets_path_planning/meshes/aruco_2.dae"/>
+        <mesh filename="package://tasks_distribution/meshes/aruco_2.dae"/>
       </geometry>
     </visual>
     <inertial>
@@ -174,7 +174,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0.3 0 0.4"/>
       <geometry name="ccc">
-        <mesh filename="package://targets_path_planning/meshes/charuco_board.dae"/>
+        <mesh filename="package://tasks_distribution/meshes/charuco_board.dae"/>
       </geometry>
     </visual>
     <inertial>

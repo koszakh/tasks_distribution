@@ -1,8 +1,8 @@
 <launch>
   <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find targets_path_planning)/worlds/heightmap.world"/>
+    <arg name="world_name" value="$(find tasks_distribution)/worlds/heightmap.world"/>
     <arg name="paused" value="false"/>
   </include>
-  <node name="target_assignment" pkg="targets_path_planning" type="target_assignment.py" output="screen" />
+  <node name="territory_cleaning" pkg="tasks_distribution" type="territory_cleaning.py" output="screen" />
 </launch>

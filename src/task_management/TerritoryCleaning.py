@@ -1,8 +1,5 @@
 # The module for garbage distribution
 
-#import PyGMO import *
-import pyswarms as ps
-from pyswarms.utils.functions import single_obj as fx
 import numpy as np
 #import gazebo_communicator.GazeboCommunicator as gc
 

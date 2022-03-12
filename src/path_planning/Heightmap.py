@@ -1,8 +1,9 @@
 # Module that converts the height map into a view convenient for path planning
 
 import rospy
-import Constants as const
-from Point import Point
+import path_planning.Constants as const
+import path_planning.PathPlanner as pp
+from path_planning.Point import Point
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
 import cv2
@@ -179,3 +180,11 @@ class Heightmap:
 		self.calc_heightmap_bounds()
 		hmap = self.get_all_heightmap_points()
 		return hmap, self.length_scale, self.width_scale, self.x_grid_size, self.y_grid_size, self.steps_count
+
+def prepare_map_handler():
+
+	hm = Heightmap(const.HEIGHTMAP_SDF_PATH)
+	hmap, l_scale, w_scale, x_step, y_step, step_count = hm.prepare_heightmap()
+	mh = pp.PathPlanner(hmap, l_scale, w_scale, x_step, y_step, step_count)
+	mh.gridmap_preparing()
+	return mh

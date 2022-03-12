@@ -1,10 +1,16 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import rospy
 from time import sleep
 import sys
-#import gazebo_communicator.GazeboCommunicator as gc
-import task_management.TerritoryCleaning as tc
+import gazebo_communicator.GazeboCommunicator as gc
+from path_planning.Heightmap import Heightmap
+#import task_management.TerritoryCleaning as tc
+import task_management.Clusterization as cl
+import path_planning.PathPlanner as pp
+import path_planning.Constants as const
+import numpy as np
+from gazebo_communicator.Robot import Robot
 
 def get_min_dist(p, points):
 
@@ -61,10 +67,33 @@ def make_pose_msg(state, orient):
 
 rospy.init_node('ros_node')
 sleep(1)
-print(sys.version)
-tc.pso_test()
+names = ['sim_p3at' + str(i) for i in range(1, 6)]
+hm = Heightmap(const.HEIGHTMAP_SDF_PATH)
+hmap, l_scale, w_scale, x_step, y_step, step_count = hm.prepare_heightmap()
+mh = pp.PathPlanner(hmap, l_scale, w_scale, x_step, y_step, step_count)
+mh.gridmap_preparing()
+robots = {}
+t_count = 3
+avg_x = np.mean([mh.min_x, mh.max_x])
+avg_y = np.mean([mh.min_y, mh.max_y])
 
+s_x = const.S_X_OFFSET
+s_y = const.S_Y_OFFSET
+g_x = const.G_X_OFFSET
+g_y = const.G_Y_OFFSET
 
+start = (avg_x + s_x, avg_y + s_y)
+goal = (avg_x + g_x, avg_y + g_y)
+
+for name in (names):
+	
+	robot_pos, orient = mh.get_start_pos(start[0], start[1], const.START_DIST_OFFSET)
+	gc.spawn_worker(name, robot_pos, orient)
+	robots[name] = Robot(name)
+	
+target_ids = mh.get_random_ids_in_area(goal[0], goal[1], const.GOAL_DIST_OFFSET, t_count)
+cc = cl.CustomClustering(robots, target_ids, mh)
+cc.run_clusterization()
 print('Finish!')
 rospy.spin()
 

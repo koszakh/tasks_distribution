@@ -1,8 +1,8 @@
 # Module for planning the path of targets on a height map
 
 import rospy
-import Constants as const
-from Point import Point, Vector2d
+import path_planning.Constants as const
+from path_planning.Point import Point, Vector2d
 from PIL import Image
 from math import sqrt, fabs, sin, cos, pi, asin, acos
 import copy
@@ -10,9 +10,11 @@ import random
 import time
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
+from gazebo_communicator.Deliverybot import Deliverybot
 from scipy.spatial.transform import Rotation
 from numpy import arange, array, mean
 from matplotlib.path import Path
+from task_management.DDPSO import get_path_key
 
 # A class describing the heightmap cells formed by its vertices.
 # Objects of this class are used when planning collision-free trajectories
@@ -174,6 +176,7 @@ class PathPlanner:
 		self.open = []
 		self.closed = []
 		self.closed_goals = []
+		self.occupied_ids = []
 		self.closed_start_points = []
 		self.calc_xy_bounds()
 
@@ -195,7 +198,9 @@ class PathPlanner:
 
 				v = self.heightmap[key]
 
-				for n_key in v.neighbors_list.keys():
+				neighbors_keys = copy.copy(list(v.neighbors_list.keys()))
+
+				for n_key in list(v.neighbors_list.keys()):
 
 					n_id = v.neighbors_list[n_key]
 					num1 = float(n_id[0])
@@ -216,16 +221,16 @@ class PathPlanner:
 				
 					for k in range(self.step_count):	
 					
-						id_1 = (str(i) + '.' + str(l), str(float(self.min_row)))
-						id_2 = (str(i) + '.' + str(l), str(float(self.max_row)))
-						id_3 = (str(float(self.min_col)), str(j) + '.' + str(k))
-						id_4 = (str(float(self.max_col)), str(j) + '.' + str(k))
+						id_1 = get_id_by_col_row_ind(i, l, self.min_row, 0)
+						id_2 = get_id_by_col_row_ind(i, l, self.max_row, 0)
+						id_3 = get_id_by_col_row_ind(self.min_col, 0, j, k)
+						id_4 = get_id_by_col_row_ind(self.max_col, 0, j, k)
 						self.mark_as_obstacle(id_1)
 						self.mark_as_obstacle(id_2)
 						self.mark_as_obstacle(id_3)
 						self.mark_as_obstacle(id_4)
 
-		last_p_id = (str(float(self.max_col)), str(float(self.max_row)))
+		last_p_id = get_id_by_col_row_ind(self.max_col, 0, self.max_row, 0)
 		self.mark_as_obstacle(last_p_id)
 						
 		#self.visualise_obstacles()
@@ -261,7 +266,6 @@ class PathPlanner:
 # key: key of the vertice
 	def mark_as_obstacle(self, key):
 		vertice = self.heightmap[key]
-		#print('obstacle_id: ' + str(key))
 		vertice.obstacle = True
 
 		if not key in self.obstacles:
@@ -326,13 +330,14 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		v_id = self.get_nearest_vertice_id(x, y)
 		grid_range = int(offset / self.real_grid_size) + 1
 		all_ids = self.get_close_points_list(v_id, offset)
-		ids = []
+		ids = {}
 		
 		for i in range(count):
 		
 			p_id = random.choice(all_ids)
 			all_ids.remove(p_id)
-			ids.append(p_id)
+			p = self.heightmap[p_id]
+			ids[p_id] = p
 			
 		return ids
 
@@ -370,7 +375,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 			for j in range(min_row, max_row):
 
-				v_id = (str(i), str(j))
+				v_id = get_id_by_col_row_ing(i, j)
 				ids.append(v_id)
 
 		ids.remove(vertice_id)
@@ -386,6 +391,10 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		self.min_y = min(y1, y2)
 		self.max_x = max(x1, x2)
 		self.max_y = max(y1, y2)
+		print('min_x: ' + str(self.min_x))
+		print('min_y: ' + str(self.min_y))
+		print('max_x: ' + str(self.max_x))
+		print('max_y: ' + str(self.max_y))
 
 # Calculation of the local roughness parameter for a vertex
 # Input
@@ -511,10 +520,10 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 	def get_cell_points(self, col, row):
 		
-		id1 = (str(col), str(row))
-		id2 = (str(col), str(row + 1))
-		id3 = (str(col + 1), str(row))
-		id4 = (str(col + 1), str(row + 1))
+		id1 = get_id_by_col_row_ind(col, 0, row, 0)
+		id2 = get_id_by_col_row_ind(col, 0, row + 1, 0)
+		id3 = get_id_by_col_row_ind(col + 1, 0, row, 0)
+		id4 = get_id_by_col_row_ind(col + 1, 0, row + 1, 0)
 
 		p1 = self.heightmap[id1]
 		p2 = self.heightmap[id2]
@@ -616,7 +625,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 						
 			for k in range(self.step_count):
 				
-				new_p_id = (str(i) + '.' + str(l), str(j) + '.' + str(k))
+				new_p_id = get_id_by_col_row_ind(i, l, j, k)
 				
 				if self.heightmap.get(new_p_id) or (l == 0 and k == 0):
 				
@@ -641,15 +650,15 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		for j in range(self.min_row, self.max_row):
 		
-			v1_id = (str(float(i)), str(float(j)))
-			v2_id = (str(float(i)), str(float(j + 1)))
+			v1_id = get_id_by_col_row_ind(i, 0, j, 0)
+			v2_id = get_id_by_col_row_ind(i, 0, j + 1, 0)
 			v1 = self.heightmap[v1_id]
 			v2 = self.heightmap[v2_id]
 		
 			
 			for k in range(self.step_count):
 			
-				new_p_id = (str(float(i)), str(j) + '.' + str(k))
+				new_p_id = get_id_by_col_row_ind(i, 0, j, k)
 				new_x = v1.x + k * self.real_grid_size
 				new_y = v1.y
 				z = v1.find_z_coord(v2, new_x, new_y)
@@ -664,14 +673,14 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		for i in range(self.min_col, self.max_col):
 		
-			v1_id = (str(float(i)), str(float(j)))
-			v2_id = (str(float(i + 1)), str(float(j)))
+			v1_id = get_id_by_col_row_ind(i, 0, j, 0)
+			v2_id = get_id_by_col_row_ind(i + 1, 0, j, 0)
 			v1 = self.heightmap[v1_id]
 			v2 = self.heightmap[v2_id]
 		
 			for l in range(self.step_count):
 			
-				new_p_id = (str(i) + '.' + str(l), str(float(j)))
+				new_p_id = get_id_by_col_row_ind(i, l, j, 0)
 				new_x = v1.x
 				new_y = v1.y - l * self.real_grid_size
 				z = v1.find_z_coord(v2, new_x, new_y)
@@ -728,6 +737,44 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			
 		return path
 
+	def find_tourists_path(self, start_id, goal_id):
+	
+		start_v = self.heightmap[start_id]
+		goal_v = self.heightmap[goal_id]
+		current_id = start_id
+		while not current_id == goal_id:
+		
+			current_v = self.heightmap[current_id]
+			last_id = current_id
+			current_neighbors = current_v.neighbors_list.values()
+			min_dist = float('inf')
+			for v_id in current_neighbors:
+			
+				v = self.heightmap[v_id]
+				dist = v.get_distance_to(goal_v)
+				if dist < min_dist:
+				
+					min_dist = dist
+					current_id = v_id
+					
+			current_v = self.heightmap[current_id]
+			current_v.set_predecessor(last_id)
+			
+		current_v = goal_v
+		path = []
+		path_ids = []
+		path.insert(0, current_v)
+		path_ids.insert(0, current_v.id)
+
+		while not current_v == start_v:
+
+			predecessor_id = current_v.get_predecessor()
+			current_v = self.heightmap[predecessor_id]
+			path.insert(0, current_v)
+			path_ids.insert(0, predecessor_id)
+			
+		return path
+			
 		
 
 # Path planning with an LRLHD* algorithm
@@ -739,10 +786,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 # path: path vertex list (None if path cannot be built)
 	def find_path(self, start_id, goal_id, start_orient):
 
-		#print('start_id: ' + str(start_id))
-		#print('goal_id: ' + str(goal_id))
 		start_v = self.heightmap[start_id]
-
 		goal_v = self.heightmap[goal_id]
 		current_v = start_v
 		current_v.path_cost = 0
@@ -788,7 +832,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				break
 
 			current_v = self.heightmap[current_v_id]
-			current_neighbors = copy.copy(current_v.neighbors_list.values())
+			current_neighbors = copy.copy(list(current_v.neighbors_list.values()))
 			
 		#print('\nIter count: ' + str(iter_count))
 		#print('Len Open: ' + str(len(self.open)))
@@ -821,7 +865,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 			self.clear_path_costs()
 			print('Path from ' + str(start_id) + ' to ' + str(goal_id) + ' vertex cannot be found.')
-			return None, None
+			return None, float('inf')
 
 	def get_random_start_pos(self, x, y):
 	
@@ -836,12 +880,23 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			if not new_p.obstacle and not self.closed_start_points.__contains__(new_p_id):
 
 				self.add_closed_start_id(new_p_id)
+				self.occupied_ids.append(new_p_id)
 				roll, pitch = self.get_start_orientation(new_p_id)
 				rot = Rotation.from_euler('xyz', [roll, pitch, 0], degrees=True)
 				quat = rot.as_quat()
 				break
 
 		return new_p, quat
+		
+	def get_random_free_id(self):
+	
+		v_id = random.choice(list(self.heightmap.keys()))
+		while v_id in self.occupied_ids:
+		
+			v_id = random.choice(list(self.heightmap.keys()))
+	
+		self.occupied_ids.append(v_id)
+		return v_id
 
 	def get_close_points_list(self, v_id, offset):
 	
@@ -929,13 +984,13 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 			for row in rows:
 
-				close_p_id = (str(col), str(row))
+				close_p_id = get_id_by_col_row_ind(col, 0, row, 0)
 				points.append(close_p_id)
 
 		line_count = 0
 		sum_angle = 0
 
-		for i in range(0, len(points) / 2):
+		for i in range(0, int(len(points) / 2)):
 
 			p1_id = points[i]
 			p2_id = points[i + 2]
@@ -993,7 +1048,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 
 	def get_nearest_vertice_id(self, x, y):
-	
+
 		j = int((x + (self.l_scale / 2)) // self.x_step)
 		i = int(((self.w_scale / 2) - y) // self.y_step)
 		j_mod = (x + (self.l_scale / 2)) % self.x_step
@@ -1021,7 +1076,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				k = 0
 				j += 1
 		
-		p_id = (str(i) + '.' + str(int(l)), str(j) + '.' + str(int(k)))
+		p_id = get_id_by_col_row_ind(i, l, j, k)
 	
 		if self.heightmap.get(p_id):
 		
@@ -1037,7 +1092,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		j = int((x + (self.l_scale / 2)) // self.x_step)
 		i = int(((self.w_scale / 2) - y) // self.y_step)
 		
-		cell_id = (str(float(i)), str(float(j)))
+		cell_id = get_id_by_col_row_ind(i, 0, j, 0)
 		return cell_id
 			
 
@@ -1358,6 +1413,37 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				max_curvature = angle_difference
 
 		return max_curvature
+		
+	def calc_paths(self, robots, targets):
+		path_costs = {}
+		paths = {}
+		for robot_key in robots.keys():
+			robot = robots[robot_key]
+			for target_key in targets.keys():
+
+				target = targets[target_key]
+				rp = robot.get_robot_position()
+				start_id = self.get_nearest_vertice_id(rp.x, rp.y)
+				goal_id = self.get_nearest_vertice_id(target.x, target.y)
+				last_vect = robot.get_robot_orientation_vector()
+	
+				if isinstance(robot, Deliverybot):
+	
+					path, path_cost = self.find_path(start_id, goal_id, last_vect)
+					
+				else:
+				
+					start_p = self.heightmap[start_id]
+					goal_p = self.heightmap[goal_id]
+					path = [start_p, goal_p]
+					path_cost = start_p.get_distance_to(goal_p)
+	
+				path_key = get_path_key(robot_key, target_key)
+				#print(str(path_key) + ' - ' + str(path_cost))
+				paths[path_key] = path
+				path_costs[path_key] = path_cost
+				
+		return paths, path_costs
 
 # Calculating path length
 # Input
@@ -1367,7 +1453,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 # path_len: path length
 def get_path_length(path):
 	path_len = 0
-
 	for i in range(0, len(path) - 1):
 
 		current_v = path[i]
@@ -1400,7 +1485,19 @@ def get_path_curvature(path):
 			max_curvature = angle_difference
 
 	return max_curvature
+
+def get_id_by_col_row_ind(col, sub_col, row, sub_row):
+
+	v_id = (str(int(col)) + '.' + str(int(sub_col)), str(int(row)) + '.' + str(int(sub_row)))
+	return v_id
 	
 def find_z_on_plane(x, y, p1, p2, p3):
 	z = p1.get_height_on_3d_plane(p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, x, y)
 	return z
+
+def get_end_vect(path):
+
+	goal = path[-1]
+	last_goal = path[-2]
+	last_vect = last_goal.get_dir_vector_between_points(goal)
+	return last_vect

@@ -14,7 +14,7 @@ from pyswarms.backend.topology import Star
 from pyswarms.backend.topology.random import Random
 import pyswarms as ps
 
-class PSO:
+class PSO_Optimizer:
 
     def __init__(self, robots, targets):
         self.robots = robots

@@ -4,17 +4,14 @@ import rospy
 import path_planning.Constants as const
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
-from gazebo_communicator.Worker import Worker
-from gazebo_communicator.Charger import Charger
-import gazebo_communicator.BatteryTracker as bt
+from gazebo_communicator.Deliverybot import Deliverybot
 from path_planning.Point import Point
 import copy
-import rvo2
 from time import sleep
 from math import fabs
 import random
 from threading import Thread
-import dubins
+#import dubins
 
 # A class that implements the calculation of non-collisionless trajectories of a group of target objects
 
@@ -30,15 +27,17 @@ import dubins
 # init_paths: dictionary of initial routes of robots
 class MovementManager(Thread):
 
-	def __init__(self, mh, w_names, c_names):
+	def __init__(self, mh, robots):
 	
 		Thread.__init__(self)
 		self.ms = gc_const.MOVEMENT_SPEED
 		self.mh = mh
-		self.robots = get_robots_dict(w_names, c_names)
-		self.w_names = w_names
-		self.c_names = c_names
+		self.robots = robots
 		self.time_step = rospy.Duration(0, gc_const.PID_NSEC_DELAY)
+
+	def add_robots(self, new_robots):
+
+		self.robots = {**self.robots, **new_robots}
 
 # Adding an agent to the group movement simulation
 # Input
@@ -65,33 +64,38 @@ class MovementManager(Thread):
 		
 			robot_pos = self.robots[name].get_robot_position()
 			dist = current_robot_pos.get_distance_to(robot_pos)
-		
 			if dist < min_dist:
 
 				min_dist = dist
 				closest_r_name = name
-		
+		if closest_r_name == None:
+			print(len(list(robots_copy.keys())))
 		return min_dist, closest_r_name
 
 	def start_robots(self):
-	
+
 		for key in self.robots:
 		
 			self.robots[key].start()
-			
-	def prepare_robots(self, w_paths, w_points, w_ch_points, ch_points, to_ch_p_paths, to_base_paths):
 
-		for name in self.w_names:
+		sleep(1)
+
+	def prepare_delivery_mission(self, eq_paths, to_gr_paths):
+
+		for r_key in eq_paths:
+
+			eq_path = eq_paths[r_key]
+			to_gr_path = to_gr_paths[r_key]
+			d_bot = self.robots[r_key]
+			d_bot.set_delivery_data(eq_path, to_gr_path)
 			
-			r_w_paths = w_paths[name] if w_paths.get(name) else []
-			r_w_points = w_points[name] if w_points.get(name) else []
-			r_w_ch_points = w_ch_points[name] if w_ch_points.get(name) else []
-			self.robots[name].set_worker_data(r_w_paths, r_w_points, r_w_ch_points)
-			
-		for name in self.c_names:
-		
-			self.robots[name].set_charger_data(ch_points[name], to_ch_p_paths[name], to_base_paths[name])
-			
+	def prepare_network_mission(self, node_paths):
+
+		for r_key in node_paths:
+
+			node_path = node_paths[r_key]
+			n_bot = self.robots[r_key]
+			n_bot.set_network_data(node_path)
 	
 	def run(self):
 
@@ -116,32 +120,6 @@ class MovementManager(Thread):
 					if robot.mode == "movement":
 
 						self.robot_avoiding(key)
-							
-					elif robot.mode == "waiting_for_worker":
-					
-						cur_worker = self.robots[robot.cur_worker]
-						ch_p = robot.ch_points[0]
-						w_pos = cur_worker.get_robot_position()
-						dist = w_pos.get_distance_to(ch_p)
-						
-						if dist < gc_const.DISTANCE_ERROR:
-						
-							robot.dock_path, robot.dock_point = self.get_docking_path(robot.name, cur_worker.name)
-							robot.change_mode("prepare_to_dock")
-							
-					elif robot.mode == "finished_charging":
-					
-						cur_worker = self.robots[robot.cur_worker]
-						w_pos = cur_worker.get_robot_position()
-						c_pos = robot.get_robot_position()
-						dist = w_pos.get_distance_to(c_pos)
-						if dist < const.MIN_NEIGHBOR_DIST:
-						
-							robot.wait()
-							
-						else:
-						
-							robot.stop_waiting()
 						
 							
 							
@@ -180,18 +158,15 @@ class MovementManager(Thread):
 
 		if min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < const.HW_ORIENT_BOUND and robot_angle > const.LW_ORIENT_BOUND and not self.is_robot_standing(neighbor):
 
-			#print(key + ' is waiting!')
 			robot.wait()
 			
 		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle > 0 and robot_angle < const.DODGE_ORIENT_BOUND and self.is_robot_standing(neighbor):
 
-			#print(key + ' is dodging to the right!')
 			robot.dodging = True
 			robot.movement(robot.ms, -gc_const.ROTATION_SPEED)
 		
 		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < 0 and robot_angle > -const.DODGE_ORIENT_BOUND and self.is_robot_standing(neighbor):
 		
-			#print(key + ' is dodging to the left!')
 			robot.dodging = True
 			robot.movement(robot.ms, gc_const.ROTATION_SPEED)
 
@@ -202,31 +177,7 @@ class MovementManager(Thread):
 		elif robot.dodging:
 		
 			robot.stop_dodging()
-
-	def get_docking_path(self, c_name, w_name):
-	
-		charger = self.robots[c_name]
-		worker = self.robots[w_name]
-		
-		rech_pos = worker.get_robot_position()
-		rech_vect = worker.get_robot_orientation_vector()
-		ch_pos = charger.get_robot_position()
-		ch_vect = charger.get_robot_orientation_vector()
-		pre_dock_point = calc_dock_point(rech_pos, rech_vect, const.PRE_DOCK_DISTANCE)
-		dock_point = calc_dock_point(rech_pos, rech_vect, gc_const.DOCKING_THRESHOLD)
-		dock_path = self.plan_path_to_dock_point(ch_pos, ch_vect, pre_dock_point, rech_vect)
-		return dock_path, dock_point
-						
-	def plan_path_to_dock_point(self, s_pos, s_vect, e_pos, e_vect):
-		
-		q0 = (s_pos.x, s_pos.y, s_vect.vector_to_radians())
-		q1 = (e_pos.x, e_pos.y, e_vect.vector_to_radians())
-		solution = dubins.shortest_path(q0, q1, const.ROBOT_RADIUS)
-		configurations, _ = solution.sample_many(gc_const.DOCK_DISTANCE_ERROR * 2)
-		path = self.convert_tup_to_mas(configurations)
-		#gc.visualise_path(path, gc_const.GREEN_VERTICE_PATH, 'v')
-		return path
-			
+									
 	def convert_tup_to_mas(self, tup_mas):
 	
 		path = []
@@ -263,10 +214,3 @@ def get_robots_dict(w_names, c_names):
 		robots[name] = robot
 		
 	return robots
-	
-def calc_dock_point(pos, orient, offset):
-
-	rev_orient = orient.get_rotated_vector(180)
-	p = pos.get_point_in_direction(rev_orient, offset)
-	
-	return p

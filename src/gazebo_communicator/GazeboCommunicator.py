@@ -1,11 +1,7 @@
-# Module for interacting with the Gazebo simulation environment
-
-#!/usr/bin/env python
-
 import rospy
 import path_planning.Point as PointGeom
-from targets_path_planning.msg import Path
-import GazeboConstants as const
+from tasks_distribution.msg import Path
+import gazebo_communicator.GazeboConstants as const
 import time
 from math import sqrt, fabs, sin, asin, pi, cos, acos
 from gazebo_msgs.msg import ModelState, ODEPhysics
@@ -85,7 +81,7 @@ def get_world_properties():
 	
 	except:
 	
-		print "Service call failed: %s" % e
+		print("Service call failed: %s" % e)
 		return None
 
 
@@ -114,9 +110,9 @@ def get_model_properties(model_name):
 		model_properties = get_model_prop(model_name)
 		return model_properties
 	
-	except rospy.ServiceException, e:
+	except rospy.ServiceException:
 	
-		print "Service call failed: %s" % e
+		print("Service call failed: %s" % e)
 		return None
 
 # Getting position of an object in the Gazebo environment
@@ -192,9 +188,9 @@ def get_link_position(link_name):
 		state = PointGeom.Point(x, y, z)
 		return state
 	
-	except rospy.ServiceException, e:
+	except rospy.ServiceException:
 	
-		print "Service call failed: %s" % e
+		print("Service call failed: %s" % e)
 		return None
 
 def get_robot_orientation_vector(robot_name):
@@ -224,9 +220,9 @@ def get_model_state(model_name):
 		model_coordinates = get_state(model_name, 'world')
 		return model_coordinates
 	
-	except rospy.ServiceException, e:
+	except rospy.ServiceException:
 	
-		print "Service call failed: %s" % e
+		print("Service call failed: %s" % e)
 		return None
 		
 def delete_model(model_name):
@@ -240,9 +236,9 @@ def delete_model(model_name):
 		print(model_name + ' model was deleted.')
 		print(ret)
 		
-	except rospy.ServiceException, e:
+	except rospy.ServiceException:
 		
-		print "Service call failed: %s" % e
+		print("Service call failed: %s" % e)
 		
 # Generation of the object described in the .sdf file in Gazebo the environment
 # Input
@@ -262,14 +258,15 @@ def spawn_sdf_model(state, model_directory, model_name):
 		spawn_model = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
 		resp = spawn_model(model_name, point_xml, '', pose, 'world')
 	
-	except rospy.ServiceException, e:
+	except rospy.ServiceException:
 	
-		print "Service call failed: %s" % e
+		print("Service call failed: %s" % e)
 
 def spawn_worker(model_name, state, orient):
 
 	state.set_z(float(state.z + const.SPAWN_HEIGHT_OFFSET))
 	spawn_urdf_model(model_name, const.WORKER_MODEL_PATH, state, orient)
+
 	
 def spawn_charger(model_name, state, orient):
 
@@ -290,9 +287,9 @@ def spawn_urdf_model(model_name, model_directory, state, orient):
 		spawn_model_client(model_name, open(model_directory, 'r').read(),
 					"/" + model_name, Pose(position=Point(state.x, state.y, state.z), orientation=Quaternion(x, y, z, w)), "world")
 	
-	except rospy.ServiceException, e:
+	except rospy.ServiceException:
 	
-		print "Service call failed: %s" % e
+		print("Service call failed: %s" % e)
 
 # Setting the object of the required position and orientation in space
 # model_name: the name of the object in the Gazebo environment
@@ -311,7 +308,7 @@ def set_model_state(model_name, pose, orient):
 	
 	except:
 	
-		print "Service call failed: %s" % e	
+		print("Service call failed: %s" % e)	
 
 def calc_twist(model_name, pose, orient):
 

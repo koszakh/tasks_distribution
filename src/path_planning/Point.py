@@ -179,6 +179,8 @@ class Point:
 # direction_vector: vector value between points
 	def get_dir_vector_between_points(self, point):
 		#print('self: ' + str(self) + ' | self.id: ' + str(self.id) + ' | point: ' + str(point) + ' | point.id: ' + str(point.id))
+		if type(point) == str:
+			print(point)
 		direction_vector = Vector2d(float(point.x - self.x), float(point.y - self.y))
 		return direction_vector
 
@@ -513,8 +515,8 @@ class Point:
 		return new_p
 
 	def get_height_on_3d_plane(self, x2, y2, z2, x3, y3, z3, new_x, new_y):
-	 	a, b, c, d = self.get_plane_equation_coeffs(x2, y2, z2, x3, y3, z3)
-	 	z = float((-a * new_x - b * new_y - d) / c)
+		a, b, c, d = self.get_plane_equation_coeffs(x2, y2, z2, x3, y3, z3)
+		z = float((-a * new_x - b * new_y - d) / c)
 		return z
 
 	def get_plane_equation_coeffs(self, x2, y2, z2, x3, y3, z3):

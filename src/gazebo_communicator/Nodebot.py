@@ -6,7 +6,7 @@ import path_planning.Constants as pp_const
 from math import fabs
 import rospy
 
-class Deliverybot(Robot):
+class Nodebot(Robot):
 
 	def __init__(self, name):
 
@@ -22,17 +22,16 @@ class Deliverybot(Robot):
 		self.mode = "stop"
 		self.dodging = False
 		self.ms = const.MOVEMENT_SPEED
-		self.to_equip_path = []
+		self.to_node_path = []
 
 	def change_mode(self, mode):
 	
 		self.mode = mode
 		rospy.loginfo("Deliverybot " + self.name + " changed mode to: " + str(self.mode))
 
-	def perform_delivery_mission(self):
+	def perform_network_mission(self):
 
-		self.follow_the_route(self.to_equip_path)
-		self.follow_the_route(self.to_group_path)
+		self.follow_the_route(self.to_node_path)
 
 		
 # Moving the robot to a point with a PID controller
@@ -57,39 +56,21 @@ class Deliverybot(Robot):
 			old_pos = robot_pos
 			rospy.sleep(self.pid_delay)
 
-	def get_robot_battery_level(self, name):
-	
-		bt = self.trackers[name]
-		b_level = bt.battery
-		return b_level
+	def set_network_data(self, to_node_path):
 
-	def get_battery_level(self):
-
-		b_level = self.get_robot_battery_level(self.name)
-		return b_level
-		
-	def print_battery_level(self):
-		
-		b_level = self.get_battery_level()
-		rospy.loginfo("Worker " + self.name + " current battery level: " + str(b_level))
-
-	def set_delivery_data(self, equip_path, group_path):
-
-		if equip_path:
-		
-			self.to_equip_path = equip_path
-			self.to_group_path = group_path
+		if to_node_path:
+			self.to_node_path = to_node_path
 			
 		else:
-			self.to_equip_path = None
+			self.to_node_path = None
 
 
 
 	def run(self):
 	
-		if self.to_equip_path:
+		if self.to_node_path:
 				
-			self.perform_delivery_mission()	
-			print('Deliverybot ' + str(self.name) + ' has finished!')
+			self.perform_network_mission()	
+			print('Nodebot ' + str(self.name) + ' has finished!')
 
 		self.change_mode("finished")
