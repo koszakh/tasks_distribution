@@ -1,9 +1,0 @@
-<launch>
-  <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
-  <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find targets_path_planning)/worlds/heightmap.world"/>
-    <arg name="paused" value="false"/>
-  </include>
-  <node name="spawn_urdf1" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/urdf/pioneer3at_1.urdf -urdf -x -11.97 -y -1.19865 -z 2.982 -R -0.000092 -P -0.019643 -Y -0.910839 -model p3at1" />
-  <node name="ros_node" pkg="targets_path_planning" type="ros_node.py" output="screen" />
-</launch>

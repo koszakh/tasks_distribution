@@ -6,6 +6,7 @@ import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
 from gazebo_communicator.Deliverybot import Deliverybot
 from path_planning.Point import Point
+import task_management.TaskConstants as t_const
 import copy
 from time import sleep
 from math import fabs
@@ -34,10 +35,29 @@ class MovementManager(Thread):
 		self.mh = mh
 		self.robots = robots
 		self.time_step = rospy.Duration(0, gc_const.PID_NSEC_DELAY)
+		self.detected_garbage = {}
+		self.picked_garbage = {}
+		self.mm_finished = False
 
 	def add_robots(self, new_robots):
 
 		self.robots = {**self.robots, **new_robots}
+
+	def set_garbage_poses(self, garbage_poses):
+
+		self.garbage_poses = garbage_poses
+
+	def get_garbage_ids(self):
+
+		return self.garbage_poses, self.detected_garbage
+
+	def vis_garbage(self):
+
+		for gp_id in self.garbage_poses:
+
+			gp = self.mh.heightmap[gp_id]
+			gc.spawn_sdf_model(gp, gc_const.BIG_RED_VERTICE_PATH, 'garbage-' + str(gp_id))
+
 
 # Adding an agent to the group movement simulation
 # Input
@@ -96,17 +116,25 @@ class MovementManager(Thread):
 			node_path = node_paths[r_key]
 			n_bot = self.robots[r_key]
 			n_bot.set_network_data(node_path)
+
+	def prepare_cleaning_mission(self, all_g_paths):
+
+		for r_key in all_g_paths:
+
+			g_paths = all_g_paths[r_key]
+			c_bot = self.robots[r_key]
+			c_bot.set_cleaning_data(g_paths)
 	
 	def run(self):
 
 		print('Mission started.')
 		self.start_robots()
 		
-		cont_flag = True
+		self.cont_flag = True
 		
-		while cont_flag:
+		while self.cont_flag:
 		
-			cont_flag = False
+			self.cont_flag = False
 			rospy.sleep(self.time_step)
 			
 			for key in self.robots:
@@ -115,15 +143,14 @@ class MovementManager(Thread):
 				
 				if not robot.mode == "finished":
 
-					cont_flag = True
+					self.cont_flag = True
 					
 					if robot.mode == "movement":
 
 						self.robot_avoiding(key)
-						
-							
-							
+						self.garbage_detection(key)
 		print('ALL ROBOTS FINISHED!')
+		self.mm_finished = True
 		
 	def is_robot_standing(self, robot):
 	
@@ -134,7 +161,32 @@ class MovementManager(Thread):
 		else:
 		
 			return False
+			
+	def garbage_detection(self, r_key):
+	
+		min_g_dist = float('inf')
+		robot = self.robots[r_key]
+		r_pos = robot.get_robot_position()
+		r_vect = robot.get_robot_orientation_vector()
+		for gp_id in self.garbage_poses:
 		
+			gp = self.mh.heightmap[gp_id]		
+			g_vect = r_pos.get_dir_vector_between_points(gp)
+			g_dist = gp.get_distance_to(r_pos)
+			det_angle = fabs(r_vect.get_angle_between_vectors(g_vect))
+			if g_dist < 5:
+				print(r_key, g_dist, det_angle)
+			if det_angle < t_const.DETECTION_ANGLE and g_dist < t_const.DETECTION_DIST and not robot.manipulator and not self.pickeg_garbage.get(gp_id):
+				if not self.detected_garbage.get(gp_id):
+					self.detected_garbage[gp_id] = gp
+					print(str(r_key) + ' detected garbage at ' + str(gp_id))
+				
+			elif det_angle < t_const.DETECTION_ANGLE and g_dist < t_const.COLLECT_DIST and robot.manipulator and not self.pickeg_garbage.get(gp_id):
+				
+				self.picked_garbage[gp_id] = gp
+				print(str(r_key) + ' collected garbage at ' + str(gp_id))
+
+
 	def robot_avoiding(self, key):
 	
 		robot = self.robots[key]
@@ -159,16 +211,19 @@ class MovementManager(Thread):
 		if min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < const.HW_ORIENT_BOUND and robot_angle > const.LW_ORIENT_BOUND and not self.is_robot_standing(neighbor):
 
 			robot.wait()
+			print(str(key) + ' is waiting!')
 			
 		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle > 0 and robot_angle < const.DODGE_ORIENT_BOUND and self.is_robot_standing(neighbor):
 
 			robot.dodging = True
 			robot.movement(robot.ms, -gc_const.ROTATION_SPEED)
+			print(str(key) + ' is dodging left!')
 		
 		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < 0 and robot_angle > -const.DODGE_ORIENT_BOUND and self.is_robot_standing(neighbor):
 		
 			robot.dodging = True
 			robot.movement(robot.ms, gc_const.ROTATION_SPEED)
+			print(str(key) + ' is dodging right!')
 
 		elif robot.waiting:
 		

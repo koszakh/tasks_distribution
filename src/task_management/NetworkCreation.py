@@ -69,7 +69,7 @@ class NetworkCreation:
 
 		key_poses = self.calc_key_poses()
 		paths, path_costs = self.mh.calc_paths(self.robots, key_poses)
-		cc = cl.CustomClustering(self.robots, key_poses, path_costs)
+		cc = cl.CustomClustering(self.robots, key_poses, self.mh, path_costs)
 		clust_dict = cc.start_clustering()
 		net_dict = {}
 		for t_key in clust_dict:

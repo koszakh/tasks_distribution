@@ -1,10 +1,11 @@
 from gazebo_communicator.Robot import Robot
 import gazebo_communicator.GazeboCommunicator as gc
 import threading as thr
-import GazeboConstants as const
+import gazebo_communicator.GazeboConstants as const
 import path_planning.Constants as pp_const
 from math import fabs
 import rospy
+import random
 
 class Cleaner(Robot):
 
@@ -20,6 +21,7 @@ class Cleaner(Robot):
 		self.waiting = False
 		self.mode = "stop"
 		self.dodging = False
+		self.manipulator = random.choice([True, False])
 
 	def change_mode(self, mode):
 	
@@ -28,9 +30,9 @@ class Cleaner(Robot):
 
 	def perform_cleaning_mission(self):
 
-		for path in self.paths:
+		for g_path in self.g_paths:
 		
-			self.follow_the_route(path)
+			self.follow_the_route(g_paths)
 
 		
 # Moving the robot to a point with a PID controller
@@ -57,37 +59,21 @@ class Cleaner(Robot):
 			old_pos = robot_pos
 			rospy.sleep(self.pid_delay)
 
-	def get_robot_battery_level(self, name):
-	
-		bt = self.trackers[name]
-		b_level = bt.battery
-		return b_level
+	def set_cleaning_data(self, g_paths):
 
-	def get_battery_level(self):
-
-		b_level = self.get_robot_battery_level(self.name)
-		return b_level
+		if g_paths:
 		
-	def print_battery_level(self):
-		
-		b_level = self.get_battery_level()
-		rospy.loginfo("Worker " + self.name + " current battery level: " + str(b_level))
-
-	def set_cleaner_data(self, paths):
-
-		if paths:
-		
-			self.paths = paths
+			self.g_paths = g_paths
 			
 		else:
 		
-			self.paths = None
+			self.g_paths = None
 
 
 
 	def run(self):
 	
-		if self.to_goods_path:
+		if self.g_paths:
 				
 			self.perform_cleaning_mission()
 				

@@ -5,6 +5,7 @@ import gazebo_communicator.GazeboConstants as const
 import path_planning.Constants as pp_const
 from math import fabs
 import rospy
+import random
 
 class Nodebot(Robot):
 
@@ -23,11 +24,12 @@ class Nodebot(Robot):
 		self.dodging = False
 		self.ms = const.MOVEMENT_SPEED
 		self.to_node_path = []
+		self.manipulator = random.choice([True, False])
 
 	def change_mode(self, mode):
 	
 		self.mode = mode
-		rospy.loginfo("Deliverybot " + self.name + " changed mode to: " + str(self.mode))
+		rospy.loginfo("Nodebot " + self.name + " changed mode to: " + str(self.mode))
 
 	def perform_network_mission(self):
 

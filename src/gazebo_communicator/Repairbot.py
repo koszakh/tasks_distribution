@@ -7,7 +7,8 @@ from math import fabs
 import rospy
 import random
 
-class Deliverybot(Robot):
+
+class Repairbot(Robot):
 
 	def __init__(self, name):
 
@@ -30,13 +31,12 @@ class Deliverybot(Robot):
 	def change_mode(self, mode):
 	
 		self.mode = mode
-		rospy.loginfo("Deliverybot " + self.name + " changed mode to: " + str(self.mode))
+		rospy.loginfo("Repairbot " + self.name + " changed mode to: " + str(self.mode))
 
-	def perform_delivery_mission(self):
+	def perform_repair_mission(self):
 
 		self.follow_the_route(self.to_equip_path)
-		self.follow_the_route(self.to_group_path)
-
+		self.follow_the_route(self.to_br_robot_path)
 		
 # Moving the robot to a point with a PID controller
 # Input
@@ -57,33 +57,15 @@ class Deliverybot(Robot):
 			self.movement(self.ms, u)
 			self.is_waiting()
 			self.is_dodging()
-			
 			old_pos = robot_pos
 			rospy.sleep(self.pid_delay)
 
+	def set_repair_data(self, to_equip_path, to_br_robot_path):
 
-	def get_robot_battery_level(self, name):
-	
-		bt = self.trackers[name]
-		b_level = bt.battery
-		return b_level
-
-	def get_battery_level(self):
-
-		b_level = self.get_robot_battery_level(self.name)
-		return b_level
+		if to_equip_path:
 		
-	def print_battery_level(self):
-		
-		b_level = self.get_battery_level()
-		rospy.loginfo("Deliverybot " + self.name + " current battery level: " + str(b_level))
-
-	def set_delivery_data(self, equip_path, group_path):
-
-		if equip_path:
-		
-			self.to_equip_path = equip_path
-			self.to_group_path = group_path
+			self.to_equip_path = to_equip_path
+			self.to_br_robot_path = to_br_robot_path
 			
 		else:
 			self.to_equip_path = None
@@ -94,7 +76,7 @@ class Deliverybot(Robot):
 	
 		if self.to_equip_path:
 				
-			self.perform_delivery_mission()	
-			print('Deliverybot ' + str(self.name) + ' has finished!')
+			self.perform_repair_mission()	
+			print('Repairbot ' + str(self.name) + ' has finished!')
 
 		self.change_mode("finished")

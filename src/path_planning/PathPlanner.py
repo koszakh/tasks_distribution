@@ -1419,7 +1419,8 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		paths = {}
 		for robot_key in robots.keys():
 			robot = robots[robot_key]
-			for target_key in targets.keys():
+			#print(targets)
+			for target_key in list(targets.keys()):
 
 				target = targets[target_key]
 				rp = robot.get_robot_position()
