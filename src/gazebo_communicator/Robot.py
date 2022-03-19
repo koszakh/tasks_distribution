@@ -8,6 +8,7 @@ from math import fabs
 import threading as thr
 from geometry_msgs.msg import Point, Twist
 from tasks_distribution.msg import ArucoDist
+from time import sleep
 
 # The class of the control object of the ground target in the Gazebo simulation environment
 
@@ -29,15 +30,10 @@ class Robot(thr.Thread):
 		self.name = robot_name
 		self.id = self.name[self.name.find('t') + 1:]
 		self.init_topics()
-		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
-		msg = Twist()
-		rospy.sleep(self.pid_delay)
-		self.vel_publisher.publish(msg)
 		self.set_movespeed(const.MOVEMENT_SPEED)
 		self.dir_point = robot_name + const.DIR_POINT_SUFFIX
 		self.mode = None
 		self.finished = False
-		self.charging = False
 		self.waiting = False
 		self.dodging = False
 		
@@ -46,6 +42,10 @@ class Robot(thr.Thread):
 		self.topic_subname = '/' + self.name
 		
 		self.vel_publisher = rospy.Publisher(self.topic_subname + '/cmd_vel', Twist, queue_size=10)
+		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
+		msg = Twist()
+		self.vel_publisher.publish(msg)
+		rospy.sleep(self.pid_delay)
 		
 		#self.paths_pub = rospy.Publisher(self.topic_subname + '/waypoints_array', WorkPath, queue_size=10)
 		#self.paths_sub = rospy.Subscriber(self.topic_subname + '/waypoints_array', WorkPath, self.set_path)
@@ -104,16 +104,18 @@ class Robot(thr.Thread):
 		error = self.get_angle_difference(goal)
 		error_sum = 0
 		robot_pos = self.get_robot_position()
+		old_pos = robot_pos
 		
-		while robot_pos.get_distance_to(goal) > const.DISTANCE_ERROR:
+		while robot_pos.get_distance_to(goal) > const.DISTANCE_ERROR and fabs(error) < 135:
 		
-	
-			old_error = error			
+			old_error = error
 			robot_pos = self.get_robot_position()
-			
 			error = self.get_angle_difference(goal)
 			u, error_sum = self.calc_control_action(error, old_error, error_sum)
 			self.movement(self.ms, u)
+			self.is_waiting()
+			self.is_dodging()
+			old_pos = robot_pos
 			rospy.sleep(self.pid_delay)
 
 	def calc_control_action(self, error, old_error, error_sum):
@@ -154,7 +156,6 @@ class Robot(thr.Thread):
 # Stopping the robot
 	def stop(self):
 
-		self.change_mode("stop")
 		msg = Twist()
 		msg.linear.x = 0
 		msg.angular.z = 0
@@ -210,15 +211,16 @@ class Robot(thr.Thread):
 	
 	def is_waiting(self):
 	
-		while self.waiting:
-		
-			pass
+		if self.waiting:
+
+			self.stop()
+			while self.waiting:
+
+				pass
 	
 	def wait(self):
-	
-		#print(self.name + ' is waiting.')
+
 		self.waiting = True
-		self.stop()
 		
 	def stop_waiting(self):
 	
@@ -227,11 +229,9 @@ class Robot(thr.Thread):
 
 	def is_dodging(self):
 
-		if self.dodging:
+		while self.dodging:
 		
-			while self.dodging:
-		
-				pass
+			pass
 
 	def stop_dodging(self):
 
@@ -256,13 +256,19 @@ class Robot(thr.Thread):
 		self.i_min = -(10 + self.ms * 15)
 		self.i_max = 10 + self.ms * 15
 
+	def change_mode(self, mode):
+	
+		self.mode = mode
+		rospy.loginfo("Robot " + self.name + " changed mode to: " + str(self.mode))
+
 
 
 # The movement of the robot along a given final route
 # Start of thread
 	def run(self):
 			
-		pass
+		self.follow_the_route(self.path)
+		self.change_mode("finished")
 		
 		
 # Converting msg to Point object

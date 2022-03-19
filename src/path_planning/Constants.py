@@ -3,7 +3,7 @@ import random
 ROBOTS_COUNT = 6
 ROOT_PATH = "/root/.gazebo/models"
 HEIGHTMAP_SDF_PATH = ROOT_PATH + '/chargers_hmap/model.sdf'
-HIGH_BOUND_HEIGHT_DIFF = 35#1
+HIGH_BOUND_HEIGHT_DIFF = 34#1
 MAX_ROUGHNESS = 30#55
 ROUGHNESS_COEF = 0.5
 HD_COEF = 0.5

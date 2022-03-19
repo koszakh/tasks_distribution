@@ -5,6 +5,7 @@ import path_planning.Constants as const
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
 from gazebo_communicator.Deliverybot import Deliverybot
+from gazebo_communicator.Robot import Robot
 from path_planning.Point import Point
 import task_management.TaskConstants as t_const
 import copy
@@ -37,6 +38,7 @@ class MovementManager(Thread):
 		self.time_step = rospy.Duration(0, gc_const.PID_NSEC_DELAY)
 		self.detected_garbage = {}
 		self.picked_garbage = {}
+		self.garbage_poses = {}
 		self.mm_finished = False
 
 	def add_robots(self, new_robots):
@@ -154,7 +156,7 @@ class MovementManager(Thread):
 		
 	def is_robot_standing(self, robot):
 	
-		if robot.mode == "task_performing" or robot.mode == "waiting_for_charger" or robot.mode == "finished" or robot.mode == "waiting_for_worker" or robot.waiting:
+		if robot.mode == "finished" or robot.waiting:
 		
 			return True
 			
@@ -164,27 +166,26 @@ class MovementManager(Thread):
 			
 	def garbage_detection(self, r_key):
 	
-		min_g_dist = float('inf')
-		robot = self.robots[r_key]
-		r_pos = robot.get_robot_position()
-		r_vect = robot.get_robot_orientation_vector()
-		for gp_id in self.garbage_poses:
-		
-			gp = self.mh.heightmap[gp_id]		
-			g_vect = r_pos.get_dir_vector_between_points(gp)
-			g_dist = gp.get_distance_to(r_pos)
-			det_angle = fabs(r_vect.get_angle_between_vectors(g_vect))
-			if g_dist < 5:
-				print(r_key, g_dist, det_angle)
-			if det_angle < t_const.DETECTION_ANGLE and g_dist < t_const.DETECTION_DIST and not robot.manipulator and not self.pickeg_garbage.get(gp_id):
-				if not self.detected_garbage.get(gp_id):
-					self.detected_garbage[gp_id] = gp
-					print(str(r_key) + ' detected garbage at ' + str(gp_id))
-				
-			elif det_angle < t_const.DETECTION_ANGLE and g_dist < t_const.COLLECT_DIST and robot.manipulator and not self.pickeg_garbage.get(gp_id):
-				
-				self.picked_garbage[gp_id] = gp
-				print(str(r_key) + ' collected garbage at ' + str(gp_id))
+		if self.garbage_poses:
+			min_g_dist = float('inf')
+			robot = self.robots[r_key]
+			r_pos = robot.get_robot_position()
+			r_vect = robot.get_robot_orientation_vector()
+			for gp_id in self.garbage_poses:
+			
+				gp = self.mh.heightmap[gp_id]		
+				g_vect = r_pos.get_dir_vector_between_points(gp)
+				g_dist = gp.get_distance_to(r_pos)
+				det_angle = fabs(r_vect.get_angle_between_vectors(g_vect))
+				if det_angle < t_const.DETECTION_ANGLE and g_dist < t_const.DETECTION_DIST and not robot.manipulator and not self.picked_garbage.get(gp_id):
+					if not self.detected_garbage.get(gp_id):
+						self.detected_garbage[gp_id] = gp
+						print(str(r_key) + ' detected garbage at ' + str(gp_id))
+					
+				elif g_dist < t_const.COLLECT_DIST and robot.manipulator and not self.picked_garbage.get(gp_id):
+					
+					self.picked_garbage[gp_id] = gp
+					print(str(r_key) + ' collected garbage at ' + str(gp_id))
 
 
 	def robot_avoiding(self, key):
@@ -209,7 +210,7 @@ class MovementManager(Thread):
 		robots_dir_angle = robot_vect.get_angle_between_vectors(neighbor_vect)
 
 		if min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < const.HW_ORIENT_BOUND and robot_angle > const.LW_ORIENT_BOUND and not self.is_robot_standing(neighbor):
-
+			
 			robot.wait()
 			print(str(key) + ' is waiting!')
 			
@@ -217,20 +218,22 @@ class MovementManager(Thread):
 
 			robot.dodging = True
 			robot.movement(robot.ms, -gc_const.ROTATION_SPEED)
-			print(str(key) + ' is dodging left!')
+			print(str(key) + ' is dodging right!')
 		
 		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < 0 and robot_angle > -const.DODGE_ORIENT_BOUND and self.is_robot_standing(neighbor):
 		
 			robot.dodging = True
 			robot.movement(robot.ms, gc_const.ROTATION_SPEED)
-			print(str(key) + ' is dodging right!')
+			print(str(key) + ' is dodging left!')
 
 		elif robot.waiting:
-		
+
+			print(str(key) + ' stopped waiting!')
 			robot.stop_waiting()
 			
 		elif robot.dodging:
-		
+
+			print(str(key) + ' stopped waiting!')
 			robot.stop_dodging()
 									
 	def convert_tup_to_mas(self, tup_mas):

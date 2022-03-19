@@ -9,11 +9,10 @@ import random
 
 class Cleaner(Robot):
 
-	def __init__(self, name, trackers):
+	def __init__(self, name):
 
 		thr.Thread.__init__(self)
 		self.name = name
-		self.trackers = trackers
 		self.init_topics()
 		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
 		self.bt = self.trackers[name]
@@ -54,8 +53,6 @@ class Cleaner(Robot):
 			self.movement(self.ms, u)
 			self.is_waiting()
 			self.is_dodging()
-			self.check_ch_p_reach()
-			self.move_energy_cons(robot_pos, old_pos)
 			old_pos = robot_pos
 			rospy.sleep(self.pid_delay)
 

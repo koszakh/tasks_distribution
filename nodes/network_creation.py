@@ -4,12 +4,13 @@ import rospy
 from time import sleep
 import sys
 import gazebo_communicator.GazeboCommunicator as gc
+import gazebo_communicator.GazeboConstants as gc_const
+from gazebo_communicator.Nodebot import Nodebot
 from path_planning.Heightmap import prepare_map_handler
+from path_planning.PathPlanner import get_path_length
 import path_planning.Constants as const
 from path_planning.Point import Vector2d, Point
 import numpy as np
-from gazebo_communicator.Nodebot import Nodebot
-import task_management.HealthCare as hc
 import task_management.NetworkCreation as nc
 import task_management.TaskConstants as t_const
 import random
@@ -34,11 +35,13 @@ mh = prepare_map_handler()
 group_pos_id = mh.get_random_free_id()
 group_pos = mh.heightmap[group_pos_id]
 group_goal_id = mh.get_random_free_id()
-v_x = random.uniform(0, 1)
-v_y = random.uniform(0, 1)
-group_route, path_cost = mh.find_path(group_pos_id, group_goal_id, Vector2d(v_x, v_y))
+group_route = mh.find_tourists_path(group_pos_id, group_goal_id)
+#gc.visualise_path(group_route, gc_const.BLUE_VERTICE_PATH, 'gr_p')
+gr_path_len = get_path_length(group_route)
+print('\n Tourists group path length: ' + str(gr_path_len))
 beacon_id = mh.get_random_free_id()
 beacon_pos = mh.heightmap[beacon_id]
+#gc.spawn_sdf_model(beacon_pos, gc_const.GREEN_VERTICE_PATH, 'beacon_pos')
 names = ['sim_p3at' + str(i) for i in range(1, t_const.ROBOTS_COUNT + 1)]
 robots = {}
 avg_x = np.mean([mh.min_x, mh.max_x])

@@ -4,6 +4,7 @@ import rospy
 from time import sleep
 import sys
 import gazebo_communicator.GazeboCommunicator as gc
+import gazebo_communicator.GazeboConstants as gc_const
 from path_planning.Heightmap import prepare_map_handler
 import task_management.Clusterization as cl
 import task_management.TaskConstants as t_const
@@ -38,19 +39,26 @@ for name in (names):
 	
 	robot_pos, orient = mh.get_start_pos(start[0], start[1], const.START_DIST_OFFSET)
 	gc.spawn_worker(name, robot_pos, orient)
-	robots[name] = Deliverybot(name, None)
+	robots[name] = Deliverybot(name)
 	
 target_ids = mh.get_random_ids_in_area(goal[0], goal[1], const.GOAL_DIST_OFFSET, t_count)
-#print(' Group route length: ' + str(len(group_route)))
-#print(group_route)
+group_pos_id = mh.get_random_free_id()
+ids = mh.get_close_points_list(group_pos_id, const.CLOSE_RADIUS)
+points = [mh.heightmap[v_id] for v_id in ids]
+gc.visualise_path(points, gc_const.RED_VERTICE_PATH, 'cp')
+group_pos = mh.heightmap[group_pos_id]
+gc.spawn_sdf_model(group_pos, gc_const.GREEN_VERTICE_PATH, 'gr_p')
+group_goal_id = mh.get_random_free_id()
+group_route = mh.find_tourists_path(group_pos_id, group_goal_id)
+#gc.visualise_path(group_route, gc_const.BLUE_VERTICE_PATH, 'gr_p')
+
 if group_route:
+
 	ed_planner = ed.EquipmentDelivery(robots, quadrotors, target_ids, group_pos, group_route, mh)
 	paths_to_equip, paths_to_group = ed_planner.plan_equipment_delivery()
-	print(paths_to_equip.keys())
 	all_robots = ed_planner.all_robots
 	active_robots = {r_key: all_robots[r_key] for r_key in list(all_robots.keys()) if isinstance(all_robots[r_key], Deliverybot) and paths_to_equip.get(r_key)}
-	print(active_robots.keys())
-	mm = MovementManager(mh, active_robots)
+	mm = MovementManager(mh, robots)
 	mm.prepare_delivery_mission(paths_to_equip, paths_to_group)
 	mm.start()
 	

@@ -52,11 +52,9 @@ if group_route:
 	ed_planner = ed.EquipmentDelivery(robots, {}, target_ids, group_pos, group_route, mh)
 	paths_to_equip, paths_to_group = ed_planner.plan_equipment_delivery()
 	print(paths_to_equip.keys())
-	all_robots = ed_planner.all_robots
 	mm = MovementManager(mh, robots)
 	mm.set_garbage_poses(garbage_ids)
 	mm.prepare_delivery_mission(paths_to_equip, paths_to_group)
-	mm.vis_garbage()
 	mm.start()
 
 while not mm.mm_finished:

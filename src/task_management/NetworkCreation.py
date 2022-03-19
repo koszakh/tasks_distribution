@@ -1,6 +1,8 @@
 import task_management.Clusterization as cl
 import task_management.DDPSO as pso_opt
 import task_management.TaskConstants as const
+import gazebo_communicator.GazeboCommunicator as gc
+import gazebo_communicator.GazeboConstants as gc_const
 
 class NetworkCreation:
 
@@ -88,6 +90,8 @@ class NetworkCreation:
 
 				return {}
 
+		nodes = [self.mh.heightmap[item] for item in list(net_dict.values())]
+		#gc.visualise_path(nodes, gc_const.BIG_GREEN_VERTICE_PATH, 'node')
 		node_paths = {}
 		for r_key in list(net_dict.keys()):
 
@@ -108,10 +112,12 @@ class NetworkCreation:
 			next_p = self.group_route[i]
 			dist = next_p.get_distance_to(last_gr_pos)
 			if dist > const.NODE_DIST:
-				#print(last_p, i)
+
 				return last_p, i
 				
 			last_p = next_p
+
+		return last_p, i
 			
 def calc_min_dist_to_node(p, node_poses):
 

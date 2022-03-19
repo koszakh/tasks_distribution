@@ -57,7 +57,6 @@ class Deliverybot(Robot):
 			self.movement(self.ms, u)
 			self.is_waiting()
 			self.is_dodging()
-			
 			old_pos = robot_pos
 			rospy.sleep(self.pid_delay)
 
