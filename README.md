@@ -6,7 +6,11 @@ Before starting it is necessary to:
 To start, you need to run on of the following commands in the ubuntu terminal:
 
 **roslaunch tasks_distribution scen1_network_creation.launch**
+
 **roslaunch tasks_distribution scen2_eq_delivery.launch**
+
 **roslaunch tasks_distribution scen3_health_care.launch**
+
 **roslaunch tasks_distribution scen5_territory_cleaning.launch**
+
 **roslaunch tasks_distribution scen6_module_replacement.launch**
