@@ -3,6 +3,10 @@ Before starting it is necessary to:
 2. Download this package - https://github.com/MobileRobots/amr-ros-config
 3. Copy models from the models/ folder to the directory where the Gazebo models are stored (usually - /root/.gazebo/models)
 
-To start, you need to run the following command in the ubuntu terminal:
+To start, you need to run on of the following commands in the ubuntu terminal:
 
-**roslaunch targets_path_planning hm_launch.launch**
+**roslaunch tasks_distribution scen1_network_creation.launch**
+**roslaunch tasks_distribution scen2_eq_delivery.launch**
+**roslaunch tasks_distribution scen3_health_care.launch**
+**roslaunch tasks_distribution scen5_territory_cleaning.launch**
+**roslaunch tasks_distribution scen6_module_replacement.launch**
