@@ -101,31 +101,11 @@ class CustomClustering:
 			if cur_target_key:
 			
 				clust_dict[cur_target_key].append(robot_key)
-				
-		max_path_cost = self.calc_max_path_cost(clust_dict)
+
 		sq_dist_sum = self.calc_square_dist_sum(clust_dict)
 		#print("\nMax path cost: " + str(max_path_cost))
 		#print("Square dist sum: " + str(sq_dist_sum))	
 		return clust_dict, sq_dist_sum
-		
-	def calc_max_path_cost(self, clust_dict):
-	
-		max_path_cost = 0
-		
-		for key in clust_dict.keys():
-		
-			assigned_robots = clust_dict[key]
-			
-			for robot_key in assigned_robots:
-			
-				path_key = get_path_key(robot_key, key)
-				path_cost = self.path_costs[path_key]
-				
-				if path_cost > max_path_cost:
-				
-					max_path_cost = path_cost
-					
-		return max_path_cost
 		
 	def calc_square_dist_sum(self, clust_dict):
 
@@ -158,7 +138,7 @@ class CustomClustering:
 			clust_dict, min_cost = self.rev_cluster_generation()
 			print('\n  Current cost: ' + str(min_cost))
 			print('  Best cost: ' + str(best_min_cost))
-			if max_cost < best_min_cost:
+			if min_cost < best_min_cost:
 			
 				best_min_cost = min_cost
 				best_clust_dict = clust_dict
@@ -200,55 +180,25 @@ class CustomClustering:
 			
 			if cur_robot_key:
 			
-				clust_dict[cur_robot_key].append(robot_key)
-				
-		max_path_cost = self.calc_rev_max_path_cost(clust_dict)
-		sq_dist_sum - self.calc_rev_square_dist_sum(clust_dict)
+				clust_dict[cur_robot_key].append(target_key)
+
+		sq_dist_sum = self.calc_rev_square_dist_sum(clust_dict)
 		#print("\nMax path cost: " + str(max_path_cost))
 		#print("Square dist sum: " + str(sq_dist_sum))
 				
 		return clust_dict, sq_dist_sum
 		
-
-	def calc_rev_max_path_cost(self, clust_dict):
-	
-		max_path_cost = 0
-		
-		for robot_key in clust_dict.keys():
-		
-			assigned_targets = clust_dict[robot_key]
-			robot = self.robots[robot_key]
-			r_pos = robot.get_robot_position()
-			r_pos_key = self.mh.get_nearest_vertice_id(r_pos.x, r_pos.y)
-			r_last_vect = robot.get_robot_orientation_vector()
-			total_path_cost = 0
-			
-			for target_key in assigned_targets:
-			
-				#path_key = get_path_key(robot_key, target_key)
-				#path_cost = self.path_costs[path_key]
-				path, path_cost = self.mh.find_path(r_pos_key, target_key, r_last_vect)
-				total_path_cost += path_cost
-				r_pos_key = target_key
-				r_last_vect = get_end_vect(path)
-
-			if total_path_cost > max_path_cost:
-			
-				max_path_cost = total_path_cost
-					
-		return max_path_cost
 		
 	def calc_rev_square_dist_sum(self, clust_dict):
 
 		sq_dist_sum = 0
-		
 		for r_key in clust_dict.keys():
-		
+
 			assigned_targets = clust_dict[r_key]
 			
 			for t_key in assigned_targets:
 			
-				path_key = get_path_key(robot_key, target_key)
+				path_key = get_path_key(r_key, t_key)
 				path_cost = self.path_costs[path_key]
 				sq_dist_sum += pow(path_cost, 2)
 					

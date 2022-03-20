@@ -325,7 +325,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 					riskiness = self.calc_riskiness(v_id)
 					v.set_riskiness(riskiness)
 
-	def get_random_ids_in_area(self, x, y, offset, count):
+	def get_random_points_in_area(self, x, y, offset, count):
 	
 		v_id = self.get_nearest_vertice_id(x, y)
 		grid_range = int(offset / self.real_grid_size) + 1
@@ -900,27 +900,32 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 	def get_close_points_list(self, v_id, offset):
 	
+		#print('\n\nv_id: ' + str(v_id))
+		#print('\nReal grid size: ' + str(self.real_grid_size))
+		#print('Current offset: ' + str(offset))
+		real_offset = ((offset // self.real_grid_size) + 1) * self.real_grid_size
+		#print('Real offset: ' + str(real_offset))
 		v = self.heightmap[v_id]
 		
-		min_x = v.x - offset
+		min_x = v.x - real_offset
 		
 		if min_x < self.min_x:
 		
 			min_x = self.min_x
 			
-		max_x = v.x + offset
+		max_x = v.x + real_offset
 		
 		if max_x > self.max_x:
 		
 			max_x = self.max_x
 			
-		min_y = v.y - offset
+		min_y = v.y - real_offset
 		
 		if min_y < self.min_y:
 		
 			min_y = self.min_y
 			
-		max_y = v.y + offset
+		max_y = v.y + real_offset
 		
 		if max_y > self.max_y:
 		
@@ -935,6 +940,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				n_id = self.get_nearest_vertice_id(x, y)
 				n = self.heightmap[n_id]
 				dist = n.get_distance_to(v)
+				#print(n_id, dist)
 				
 				if dist < offset and not ids.__contains__(n_id):
 				

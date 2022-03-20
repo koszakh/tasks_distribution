@@ -161,7 +161,7 @@ class EquipmentDelivery:
 			gr_pos = self.calc_potential_group_pos(full_time)
 			p_dist = gr_pos.get_distance_to(p)
 			if p_dist < 2:
-			
+
 				est_time = full_time
 				break
 		

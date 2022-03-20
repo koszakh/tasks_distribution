@@ -3,6 +3,7 @@
 import numpy as np
 import task_management.Clusterization as cl
 import task_management.DDPSO as pso_opt
+from path_planning.PathPlanner import get_end_vect
 
 class TerritoryCleaning:
 
@@ -11,12 +12,6 @@ class TerritoryCleaning:
 		self.robots = {r_key: robots[r_key] for r_key in list(robots.keys()) if robots[r_key].manipulator}
 		self.garbage_poses = garbage_poses
 		self.mh = mh
-
-	def distribute_cleaning_robots(self):
-
-		robot_poses = [gc.get_model_position(name) for name in robot_names]
-		distributed_garbage = distribute_garbage(robot_poses, garbage_location)
-		return distributed_garbage
 		
 	def distribute_garbage(self):
 

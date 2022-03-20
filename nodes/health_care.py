@@ -42,7 +42,7 @@ def medicine_delivery(names, quadrotors, group_pos, group_route, mh, goal):
 		robots[name] = Deliverybot(name)
 		
 	med_count = t_const.EQUIP_COUNT	
-	target_ids = mh.get_random_ids_in_area(goal[0], goal[1], const.GOAL_DIST_OFFSET, t_const.EQUIP_COUNT)
+	target_ids = mh.get_random_points_in_area(goal[0], goal[1], const.GOAL_DIST_OFFSET, t_const.EQUIP_COUNT)
 	if group_route:
 		
 		ed_planner = ed.EquipmentDelivery(robots, quadrotors, target_ids, group_pos, group_route, mh)
@@ -67,7 +67,7 @@ def busy_robots_simulation(names, mh):
 
 	busy_robots = {}
 	tmp_names = copy.copy(names)
-	tmp_target_ids = mh.get_random_ids_in_area(goal[0], goal[1], const.GOAL_DIST_OFFSET, t_const.BUSY_ROBOTS_COUNT)
+	tmp_target_ids = mh.get_random_points_in_area(goal[0], goal[1], const.GOAL_DIST_OFFSET, t_const.BUSY_ROBOTS_COUNT)
 	
 	for i in range(t_const.BUSY_ROBOTS_COUNT):
 

@@ -41,13 +41,9 @@ for name in (names):
 	gc.spawn_worker(name, robot_pos, orient)
 	robots[name] = Deliverybot(name)
 	
-target_ids = mh.get_random_ids_in_area(goal[0], goal[1], const.GOAL_DIST_OFFSET, t_count)
+target_ids = mh.get_random_points_in_area(goal[0], goal[1], const.GOAL_DIST_OFFSET, t_count)
 group_pos_id = mh.get_random_free_id()
-ids = mh.get_close_points_list(group_pos_id, const.CLOSE_RADIUS)
-points = [mh.heightmap[v_id] for v_id in ids]
-gc.visualise_path(points, gc_const.RED_VERTICE_PATH, 'cp')
 group_pos = mh.heightmap[group_pos_id]
-gc.spawn_sdf_model(group_pos, gc_const.GREEN_VERTICE_PATH, 'gr_p')
 group_goal_id = mh.get_random_free_id()
 group_route = mh.find_tourists_path(group_pos_id, group_goal_id)
 #gc.visualise_path(group_route, gc_const.BLUE_VERTICE_PATH, 'gr_p')

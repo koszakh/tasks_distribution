@@ -47,7 +47,7 @@ for name in (names):
 		robots[name] = Repairbot(name)
 
 
-module_p_ids = mh.get_random_ids_in_area(goal[0], goal[1], const.GOAL_DIST_OFFSET, modules_count)
+module_p_ids = mh.get_random_points_in_area(goal[0], goal[1], const.GOAL_DIST_OFFSET, modules_count)
 mr = ModuleReplacement(robots, broken_robot, module_p_ids, mh)
 ta_dict = mr.assign_robots_to_modules()
 full_robots = robots

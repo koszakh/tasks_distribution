@@ -15,7 +15,6 @@ class Cleaner(Robot):
 		self.name = name
 		self.init_topics()
 		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
-		self.bt = self.trackers[name]
 		self.finished = False
 		self.waiting = False
 		self.mode = "stop"
@@ -31,7 +30,7 @@ class Cleaner(Robot):
 
 		for g_path in self.g_paths:
 		
-			self.follow_the_route(g_paths)
+			self.follow_the_route(g_path)
 
 		
 # Moving the robot to a point with a PID controller

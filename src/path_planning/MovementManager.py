@@ -233,7 +233,7 @@ class MovementManager(Thread):
 			
 		elif robot.dodging:
 
-			print(str(key) + ' stopped waiting!')
+			print(str(key) + ' stopped dodging!')
 			robot.stop_dodging()
 									
 	def convert_tup_to_mas(self, tup_mas):

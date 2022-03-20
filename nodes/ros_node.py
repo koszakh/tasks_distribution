@@ -72,9 +72,10 @@ def make_pose_msg(state, orient):
 rospy.init_node('ros_node')
 name1 = 'sim_p3at1'
 name2 = 'sim_p3at2'
-p1 = Point(-5, 0.5, 0.2)
-p2 = Point(2, 0, 0.2)
-g1 = Point(3, 0, 0)
+p1 = Point(-2, -3, 0.2)
+g1 = Point(4, 2, 0)
+
+p2 = Point(4, 0, 0.2)
 g2 = Point(-6, 0, 0)
 
 vect1 = p1.get_angle_between_points(g1)
