@@ -41,7 +41,7 @@ gr_path_len = get_path_length(group_route)
 print('\n Tourists group path length: ' + str(gr_path_len))
 beacon_id = mh.get_random_free_id()
 beacon_pos = mh.heightmap[beacon_id]
-#gc.spawn_sdf_model(beacon_pos, gc_const.GREEN_VERTICE_PATH, 'beacon_pos')
+gc.spawn_sdf_model(beacon_pos, gc_const.BIG_GREEN_VERTICE_PATH, 'beacon_pos')
 names = ['sim_p3at' + str(i) for i in range(1, t_const.ROBOTS_COUNT + 1)]
 robots = {}
 avg_x = np.mean([mh.min_x, mh.max_x])

@@ -13,6 +13,7 @@ class NetworkCreation:
 		self.beacon_pos = beacon_pos
 		self.init_group_pos = group_pos
 		self.group_route = group_route
+		gc.visualise_path(self.group_route, gc_const.RED_VERTICE_PATH, 'gp')
 		
 	def get_current_robots_mas(self, names_mas):
 	
@@ -28,24 +29,33 @@ class NetworkCreation:
 
 		net_poses = [self.beacon_pos]
 		last_net_p = self.beacon_pos
-		gr_pos_dist = last_net_p.get_distance_to(self.init_group_pos)
+		closest_gr_p, ind = self.get_closest_group_pos()
+		gr_pos_dist = last_net_p.get_distance_to(closest_gr_p)
 		while gr_pos_dist > const.MAX_NET_DIST:
 		
-			new_p = last_net_p.get_point_at_distance_and_angle(self.init_group_pos, const.NODE_DIST)
+			new_p = last_net_p.get_point_at_distance_and_angle(closest_gr_p, const.NODE_DIST)
 			new_id = self.mh.get_nearest_vertice_id(new_p.x, new_p.y)
 			new_net_p = self.mh.heightmap[new_id]
 			net_poses.append(new_net_p)
 			last_net_p = new_net_p
-			gr_pos_dist = last_net_p.get_distance_to(self.init_group_pos)
+			gr_pos_dist = last_net_p.get_distance_to(closest_gr_p)
 		
-		last_group_pos = self.init_group_pos
-		ind = 0
-		while not self.check_network_coverage(net_poses) and ind < len(self.group_route):
+		last_group_pos = closest_gr_p
+		init_ind = ind
+		print('Forward')
+		while ind < len(self.group_route):
 			
 			next_group_pos, ind = self.get_next_group_pos(last_group_pos, ind)
-			#new_p = last_net_p.get_point_at_distance_and_angle(next_group_pos, const.NODE_DIST)
-			#new_id = self.mh.get_nearest_vertice_id(new_p.x, new_p.y)
-			#new_net_p = self.mh.heightmap[new_id]
+			print(ind, len(self.group_route))
+			last_group_pos = next_group_pos
+			net_poses.append(next_group_pos)
+			
+		ind = init_ind
+		print('Backward')
+		last_group_pos = closest_gr_p
+		while not self.check_network_coverage(net_poses) and ind >= 0:
+		
+			next_group_pos, ind = self.get_next_rev_group_pos(last_group_pos, ind)
 			last_group_pos = next_group_pos
 			net_poses.append(next_group_pos)
 		
@@ -91,7 +101,7 @@ class NetworkCreation:
 				return {}
 
 		nodes = [self.mh.heightmap[item] for item in list(net_dict.values())]
-		#gc.visualise_path(nodes, gc_const.BIG_GREEN_VERTICE_PATH, 'node')
+		gc.visualise_path(nodes, gc_const.BIG_GREEN_VERTICE_PATH, 'node')
 		node_paths = {}
 		for r_key in list(net_dict.keys()):
 
@@ -117,7 +127,38 @@ class NetworkCreation:
 				
 			last_p = next_p
 
-		return last_p, i
+		return last_p, len(self.group_route)
+		
+	def get_next_rev_group_pos(self, last_gr_pos, index):
+
+		last_p = last_gr_pos
+		for i in range(index, -1, -1):
+		
+			next_p = self.group_route[i]
+			dist = next_p.get_distance_to(last_gr_pos)
+			if dist > const.NODE_DIST:
+
+				return last_p, i
+				
+			last_p = next_p
+
+		return last_p, -1
+		
+	def get_closest_group_pos(self):
+	
+		min_dist = float('inf')
+		for i in range(len(self.group_route)):
+		
+			gr_p = self.group_route[i]
+			dist = gr_p.get_distance_to(self.beacon_pos)
+			#print('dist: ' + str(dist) + ' | id: ' + str(gr_p.id))
+			if dist < min_dist:
+			
+				min_dist = dist
+				closest_p = gr_p
+				cl_ind = i
+			
+		return closest_p, cl_ind
 			
 def calc_min_dist_to_node(p, node_poses):
 
